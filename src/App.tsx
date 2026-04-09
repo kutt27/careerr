@@ -9,6 +9,7 @@ import RoadmapInput from './components/RoadmapInput';
 import RoadmapDisplay from './components/RoadmapDisplay';
 import { Roadmap, Level } from './types';
 import { generateRoadmap } from './services/geminiService';
+import { analyzeTopic } from './services/groqService';
 import { motion, AnimatePresence } from 'motion/react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
@@ -21,7 +22,8 @@ export default function App() {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await generateRoadmap(topic, level);
+      const analysis = await analyzeTopic(topic, level);
+      const result = await generateRoadmap(topic, level, analysis);
       setRoadmap(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');

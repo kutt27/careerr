@@ -1,14 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Roadmap, Level } from "../types";
+import { GEMINI_PROMT_TEMPLATE } from "./templates";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-export async function generateRoadmap(topic: string, level: Level): Promise<Roadmap> {
+export async function generateRoadmap(topic: string, level: Level, analysis: string): Promise<Roadmap> {
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: `Create a detailed learning roadmap for "${topic}" at the ${level} level. 
-    The roadmap should be structured as a series of chronological steps. 
-    Each step should have a title, a brief description, and a list of specific sub-topics to cover.`,
+    model: "gemini-1.5-flash", // Updated to a stable model name if preview was an issue, but keeping it modern
+    contents: GEMINI_PROMT_TEMPLATE(topic, level, analysis),
     config: {
       responseMimeType: "application/json",
       responseSchema: {
