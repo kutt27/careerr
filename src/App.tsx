@@ -7,24 +7,30 @@ import React, { useState } from 'react';
 import Header from './components/Header';
 import RoadmapInput from './components/RoadmapInput';
 import RoadmapDisplay from './components/RoadmapDisplay';
-import { Roadmap, Level } from './types';
+import IntakeForm from './components/IntakeForm';
+import { Roadmap, Level, IntakeQuestions, IntakeAnswer } from './types';
 import { generateRoadmap } from './services/geminiService';
-import { analyzeTopic } from './services/groqService';
+import { getIntakeQuestions } from './services/groqService';
 import { motion, AnimatePresence } from 'motion/react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
 export default function App() {
+  const [topic, setTopic] = useState<string>('');
+  const [level, setLevel] = useState<Level | null>(null);
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
+  const [intake, setIntake] = useState<IntakeQuestions | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = async (topic: string, level: Level) => {
+  const handleInitialGenerate = async (topic: string, level: Level) => {
     setIsLoading(true);
     setError(null);
+    setTopic(topic);
+    setLevel(level);
     try {
-      const analysis = await analyzeTopic(topic, level);
-      const result = await generateRoadmap(topic, level, analysis);
-      setRoadmap(result);
+      const result = await getIntakeQuestions(topic, level);
+      setIntake(result);
+      setRoadmap(null); // Clear roadmap if we are re-generating
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       console.error(err);
@@ -33,13 +39,37 @@ export default function App() {
     }
   };
 
+  const handleIntakeSubmit = async (answers: IntakeAnswer[]) => {
+    if (!level) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await generateRoadmap(topic, level, answers);
+      setRoadmap(result);
+      setIntake(null); // Done with intake
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelIntake = () => {
+    setIntake(null);
+    setTopic('');
+    setLevel(null);
+  };
+
   return (
     <div className="min-h-screen bg-[#f0f4f9] flex flex-col">
       <Header />
       
       <main className="flex-grow flex flex-col justify-center py-12">
         <div className="w-full max-w-5xl mx-auto space-y-12">
-          <RoadmapInput onGenerate={handleGenerate} isLoading={isLoading} />
+          {!intake && !roadmap && (
+            <RoadmapInput onGenerate={handleInitialGenerate} isLoading={isLoading} />
+          )}
 
           <AnimatePresence mode="wait">
             {isLoading && (
@@ -52,7 +82,7 @@ export default function App() {
               >
                 <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
                 <p className="text-[#444746] text-sm font-medium">
-                  Generating your roadmap...
+                  {intake ? "Building your personalized roadmap..." : "Analyzing your needs..."}
                 </p>
               </motion.div>
             )}
@@ -67,6 +97,15 @@ export default function App() {
                 <AlertCircle size={18} />
                 <p className="font-medium">{error}</p>
               </motion.div>
+            )}
+
+            {intake && !roadmap && !isLoading && (
+              <IntakeForm 
+                intake={intake} 
+                onSubmit={handleIntakeSubmit} 
+                onCancel={handleCancelIntake}
+                isLoading={isLoading} 
+              />
             )}
 
             {roadmap && !isLoading && (

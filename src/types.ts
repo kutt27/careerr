@@ -13,3 +13,13 @@ export interface Roadmap {
   overview: string;
   steps: RoadmapStep[];
 }
+
+export interface IntakeQuestions {
+  summary: string;
+  questions: string[];
+}
+
+export interface IntakeAnswer {
+  question: string;
+  answer: string;
+}

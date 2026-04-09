@@ -19,20 +19,17 @@ Guidelines:
 - Avoid yes/no questions unless absolutely necessary.
 - Do not ask more than one thing in a single question.
 
-Format your response exactly as:
+Format your response exactly as a JSON object:
+{
+  "summary": "1–3 sentences explaining what this questionnaire is trying to clarify for this user.",
+  "questions": [
+    "Question 1",
+    "Question 2",
+    "..."
+  ]
+}
 
-Summary:
-[1–3 sentences explaining what this questionnaire is trying to clarify for this user.]
-
-Questions:
-1. [Question 1]
-2. [Question 2]
-3. [Question 3]
-[...]
-
-Do not include example answers.
-Do not add explanations after each question.
-Only output the Summary and the numbered Questions.
+Only output the JSON object. Do not include any other text.
 `;
 
 export const GEMINI_PROMT_TEMPLATE = (topic: string, level: string, groqAnalysis: string) => `
