@@ -1,17 +1,27 @@
 export type Level = 'Beginner' | 'Intermediate' | 'Advanced';
 
-export interface RoadmapStep {
+export interface ReflectionProfile {
+  sentiment: string;
+  learning_style_preference: string;
+  motivation_trigger: string;
+  risk_factors: string[];
+  current_trend_frame: string;
+}
+
+export interface RoadmapPhase {
+  id: string; // e.g. "P1"
   title: string;
-  description: string;
-  topics: string[];
-  estimatedTime?: string;
+  style: string;
+  motivation_hook: string;
+  tasks: string[];
 }
 
 export interface Roadmap {
   topic: string;
   level: Level;
   overview: string;
-  steps: RoadmapStep[];
+  phase_count: number;
+  phases: RoadmapPhase[];
 }
 
 export interface IntakeQuestions {
@@ -23,3 +33,4 @@ export interface IntakeAnswer {
   question: string;
   answer: string;
 }
+

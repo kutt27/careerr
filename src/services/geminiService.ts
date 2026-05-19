@@ -1,14 +1,59 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Roadmap, Level, IntakeAnswer } from "../types";
-import { GEMINI_PROMPT_TEMPLATE } from "./templates";
+import { Roadmap, Level, IntakeAnswer, ReflectionProfile } from "../types";
+import { GEMINI_PROMPT_TEMPLATE, GEMINI_REFLECTION_TEMPLATE } from "./templates";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-export async function generateRoadmap(topic: string, level: Level, answers: IntakeAnswer[]): Promise<Roadmap> {
+export async function generateReflection(topic: string, level: Level, answers: IntakeAnswer[]): Promise<ReflectionProfile> {
   const response = await ai.models.generateContent({
     model: "gemini-1.5-flash",
-    contents: GEMINI_PROMPT_TEMPLATE(topic, level, answers),
+    contents: GEMINI_REFLECTION_TEMPLATE(topic, level, answers),
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          sentiment: { type: Type.STRING },
+          learning_style_preference: { type: Type.STRING },
+          motivation_trigger: { type: Type.STRING },
+          risk_factors: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          current_trend_frame: { type: Type.STRING }
+        },
+        required: ["sentiment", "learning_style_preference", "motivation_trigger", "risk_factors", "current_trend_frame"]
+      }
+    }
+  });
 
+  const text = response.text;
+  if (!text) {
+    throw new Error("Failed to generate reflection profile");
+  }
+  return JSON.parse(text) as ReflectionProfile;
+}
+
+export async function generateRoadmap(topic: string, level: Level, answers: IntakeAnswer[]): Promise<Roadmap> {
+  // Stage 1: Generate self-reflection profile
+  let reflection: ReflectionProfile;
+  try {
+    reflection = await generateReflection(topic, level, answers);
+  } catch (e) {
+    console.error("Failed to generate reflection, using default profile:", e);
+    reflection = {
+      sentiment: "neutral",
+      learning_style_preference: "conceptual + examples",
+      motivation_trigger: "completing milestones",
+      risk_factors: ["time constraints"],
+      current_trend_frame: topic
+    };
+  }
+
+  // Stage 2: Generate personalized roadmap
+  const response = await ai.models.generateContent({
+    model: "gemini-1.5-flash",
+    contents: GEMINI_PROMPT_TEMPLATE(topic, level, answers, reflection),
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -17,24 +62,26 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
           topic: { type: Type.STRING },
           level: { type: Type.STRING },
           overview: { type: Type.STRING, description: "A brief overview of what this level covers for this topic." },
-          steps: {
+          phase_count: { type: Type.INTEGER },
+          phases: {
             type: Type.ARRAY,
             items: {
               type: Type.OBJECT,
               properties: {
+                id: { type: Type.STRING },
                 title: { type: Type.STRING },
-                description: { type: Type.STRING },
-                topics: {
+                style: { type: Type.STRING },
+                motivation_hook: { type: Type.STRING },
+                tasks: {
                   type: Type.ARRAY,
                   items: { type: Type.STRING }
-                },
-                estimatedTime: { type: Type.STRING, description: "e.g., '1-2 weeks'" }
+                }
               },
-              required: ["title", "description", "topics"]
+              required: ["id", "title", "style", "motivation_hook", "tasks"]
             }
           }
         },
-        required: ["topic", "level", "overview", "steps"]
+        required: ["topic", "level", "overview", "phase_count", "phases"]
       }
     }
   });
@@ -51,3 +98,4 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
     throw new Error("Invalid roadmap format received from AI");
   }
 }
+
