@@ -6,7 +6,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export async function generateReflection(topic: string, level: Level, answers: IntakeAnswer[]): Promise<ReflectionProfile> {
   const response = await ai.models.generateContent({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.5-flash",
     contents: GEMINI_REFLECTION_TEMPLATE(topic, level, answers),
     config: {
       responseMimeType: "application/json",
@@ -52,7 +52,7 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
 
   // Stage 2: Generate personalized roadmap
   const response = await ai.models.generateContent({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.5-flash",
     contents: GEMINI_PROMPT_TEMPLATE(topic, level, answers, reflection),
     config: {
       responseMimeType: "application/json",
