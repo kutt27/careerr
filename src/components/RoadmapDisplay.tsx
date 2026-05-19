@@ -5,9 +5,10 @@ import { CheckCircle2, Check, Sparkles } from 'lucide-react';
 
 interface RoadmapDisplayProps {
   roadmap: Roadmap;
+  onReset: () => void;
 }
 
-export default function RoadmapDisplay({ roadmap }: RoadmapDisplayProps) {
+export default function RoadmapDisplay({ roadmap, onReset }: RoadmapDisplayProps) {
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -26,8 +27,16 @@ export default function RoadmapDisplay({ roadmap }: RoadmapDisplayProps) {
         <p className="text-[#444746] max-w-xl mx-auto leading-relaxed text-base font-medium">
           {roadmap.overview}
         </p>
-        <div className="inline-block px-4 py-1.5 bg-blue-50 border border-blue-100 text-blue-800 text-xs font-bold rounded-full">
-          Structured into {roadmap.phase_count} Custom Phases
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="inline-block px-4 py-1.5 bg-blue-50 border border-blue-100 text-blue-800 text-xs font-bold rounded-full">
+            Structured into {roadmap.phase_count} Custom Phases
+          </div>
+          <button
+            onClick={onReset}
+            className="px-4 py-1.5 bg-white border border-gray-300 hover:border-blue-300 hover:bg-blue-50/20 text-[#444746] hover:text-blue-700 text-xs font-bold rounded-full transition-all cursor-pointer shadow-sm"
+          >
+            Create New Roadmap
+          </button>
         </div>
       </div>
 

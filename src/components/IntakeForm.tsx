@@ -83,18 +83,48 @@ const STATIC_QUESTIONS: QuestionDef[] = [
 ];
 
 export default function IntakeForm({ topic, level, onSubmit, onCancel, isLoading }: IntakeFormProps) {
-  const [activeStep, setActiveStep] = useState(0);
-  const [maxStepReached, setMaxStepReached] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({
-    whyNow: '',
-    learningStyle: '',
-    previousExposure: '',
-    primaryGoal: '',
-    successDefinition: '',
-    additionalInfo: ''
+  const [answers, setAnswers] = useState<Record<string, string>>(() => {
+    const saved = localStorage.getItem('careerr_intake_answers');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to parse saved answers:", e);
+      }
+    }
+    return {
+      whyNow: '',
+      learningStyle: '',
+      previousExposure: '',
+      primaryGoal: '',
+      successDefinition: '',
+      additionalInfo: ''
+    };
+  });
+
+  const [activeStep, setActiveStep] = useState(() => {
+    const saved = localStorage.getItem('careerr_active_step');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  const [maxStepReached, setMaxStepReached] = useState(() => {
+    const saved = localStorage.getItem('careerr_max_step_reached');
+    return saved ? parseInt(saved, 10) : 0;
   });
 
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    localStorage.setItem('careerr_intake_answers', JSON.stringify(answers));
+  }, [answers]);
+
+  useEffect(() => {
+    localStorage.setItem('careerr_active_step', activeStep.toString());
+  }, [activeStep]);
+
+  useEffect(() => {
+    localStorage.setItem('careerr_max_step_reached', maxStepReached.toString());
+  }, [maxStepReached]);
 
   useEffect(() => {
     if (activeStep > maxStepReached) {
