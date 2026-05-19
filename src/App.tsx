@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import RoadmapInput from './components/RoadmapInput';
 import RoadmapDisplay from './components/RoadmapDisplay';
@@ -9,12 +9,56 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
 export default function App() {
-  const [topic, setTopic] = useState<string>('');
-  const [level, setLevel] = useState<Level | null>(null);
-  const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
-  const [showIntake, setShowIntake] = useState(false);
+  const [topic, setTopic] = useState<string>(() => {
+    return localStorage.getItem('careerr_topic') || '';
+  });
+  const [level, setLevel] = useState<Level | null>(() => {
+    return (localStorage.getItem('careerr_level') as Level) || null;
+  });
+  const [roadmap, setRoadmap] = useState<Roadmap | null>(() => {
+    const saved = localStorage.getItem('careerr_roadmap');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to parse saved roadmap:", e);
+      }
+    }
+    return null;
+  });
+  const [showIntake, setShowIntake] = useState<boolean>(() => {
+    return localStorage.getItem('careerr_show_intake') === 'true';
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (topic) {
+      localStorage.setItem('careerr_topic', topic);
+    } else {
+      localStorage.removeItem('careerr_topic');
+    }
+  }, [topic]);
+
+  useEffect(() => {
+    if (level) {
+      localStorage.setItem('careerr_level', level);
+    } else {
+      localStorage.removeItem('careerr_level');
+    }
+  }, [level]);
+
+  useEffect(() => {
+    localStorage.setItem('careerr_show_intake', showIntake.toString());
+  }, [showIntake]);
+
+  useEffect(() => {
+    if (roadmap) {
+      localStorage.setItem('careerr_roadmap', JSON.stringify(roadmap));
+    } else {
+      localStorage.removeItem('careerr_roadmap');
+    }
+  }, [roadmap]);
 
   const handleInitialGenerate = (topic: string, level: Level) => {
     setTopic(topic);
@@ -22,6 +66,9 @@ export default function App() {
     setShowIntake(true);
     setRoadmap(null); // Clear roadmap if we are re-generating
     setError(null);
+    localStorage.removeItem('careerr_intake_answers');
+    localStorage.removeItem('careerr_active_step');
+    localStorage.removeItem('careerr_max_step_reached');
   };
 
   const handleIntakeSubmit = async (answers: IntakeAnswer[]) => {
@@ -32,6 +79,9 @@ export default function App() {
       const result = await generateRoadmap(topic, level, answers);
       setRoadmap(result);
       setShowIntake(false); // Done with intake
+      localStorage.removeItem('careerr_intake_answers');
+      localStorage.removeItem('careerr_active_step');
+      localStorage.removeItem('careerr_max_step_reached');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       console.error(err);
@@ -42,6 +92,23 @@ export default function App() {
 
   const handleCancelIntake = () => {
     setShowIntake(false);
+    localStorage.removeItem('careerr_intake_answers');
+    localStorage.removeItem('careerr_active_step');
+    localStorage.removeItem('careerr_max_step_reached');
+  };
+
+  const handleReset = () => {
+    setRoadmap(null);
+    setShowIntake(false);
+    setTopic('');
+    setLevel(null);
+    localStorage.removeItem('careerr_topic');
+    localStorage.removeItem('careerr_level');
+    localStorage.removeItem('careerr_show_intake');
+    localStorage.removeItem('careerr_roadmap');
+    localStorage.removeItem('careerr_intake_answers');
+    localStorage.removeItem('careerr_active_step');
+    localStorage.removeItem('careerr_max_step_reached');
   };
 
   return (
@@ -80,7 +147,7 @@ export default function App() {
                 key="error"
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="mx-4 p-4 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3 text-red-600 text-sm"
+                className="mx-4 p-4 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3 text-red-650 text-sm"
               >
                 <AlertCircle size={18} />
                 <p className="font-medium">{error}</p>
@@ -105,7 +172,7 @@ export default function App() {
                 exit={{ opacity: 0, y: -10 }}
                 className="px-4"
               >
-                <RoadmapDisplay roadmap={roadmap} />
+                <RoadmapDisplay roadmap={roadmap} onReset={handleReset} />
               </motion.div>
             )}
           </AnimatePresence>
