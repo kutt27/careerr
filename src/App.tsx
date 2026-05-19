@@ -4,7 +4,7 @@ import RoadmapInput from './components/RoadmapInput';
 import RoadmapDisplay from './components/RoadmapDisplay';
 import IntakeForm from './components/IntakeForm';
 import { Roadmap, Level, IntakeAnswer } from './types';
-import { generateRoadmap } from './services/geminiService';
+import { generateRoadmap } from './services/aiService';
 import { motion, AnimatePresence } from 'motion/react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
@@ -19,7 +19,10 @@ export default function App() {
     const saved = localStorage.getItem('careerr_roadmap');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.phases) && parsed.phases.length > 0) {
+          return parsed;
+        }
       } catch (e) {
         console.error("Failed to parse saved roadmap:", e);
       }
