@@ -1,15 +1,14 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Roadmap, Level, IntakeAnswer } from "../types";
-import { GEMINI_PROMT_TEMPLATE } from "./templates";
+import { GEMINI_PROMPT_TEMPLATE } from "./templates";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export async function generateRoadmap(topic: string, level: Level, answers: IntakeAnswer[]): Promise<Roadmap> {
-  const answersString = answers.map(a => `Q: ${a.question}\nA: ${a.answer}`).join("\n\n");
-  
   const response = await ai.models.generateContent({
     model: "gemini-1.5-flash",
-    contents: GEMINI_PROMT_TEMPLATE(topic, level, answersString),
+    contents: GEMINI_PROMPT_TEMPLATE(topic, level, answers),
+
     config: {
       responseMimeType: "application/json",
       responseSchema: {

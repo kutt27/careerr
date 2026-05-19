@@ -1,4 +1,4 @@
-An AI powered roadmap to give you exactly what you need to learn. I direct replacement for spoon feeding.
+An AI powered roadmap to give you exactly what you need to learn. A direct replacement for spoon feeding. You decide what you want to learn, how you want to learn it, and this will give you the roadmap.
 
 ### Intented users
 
@@ -18,3 +18,7 @@ Reason being, this will induce some sense of familiarity for people, thus reduci
 ### Login Options
 
 - Google Sign in
+
+**Feature oriented from personal Intrinsic thoughts**
+- Devising a [80/20](https://en.wikipedia.org/wiki/Pareto_principle) percent rule for the entire application or give it as a option. 
+- Maybe it can be 60/40 (our own investment strategy).

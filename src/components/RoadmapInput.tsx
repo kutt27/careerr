@@ -6,14 +6,33 @@ import { motion } from 'motion/react';
 interface RoadmapInputProps {
   onGenerate: (topic: string, level: Level) => void;
   isLoading: boolean;
+  readOnly?: boolean;
+  onEdit?: () => void;
+  initialTopic?: string;
+  initialLevel?: Level;
 }
 
 const levels: Level[] = ['Beginner', 'Intermediate', 'Advanced'];
 
-export default function RoadmapInput({ onGenerate, isLoading }: RoadmapInputProps) {
-  const [topic, setTopic] = useState('');
-  const [level, setLevel] = useState<Level>('Beginner');
+export default function RoadmapInput({ 
+  onGenerate, 
+  isLoading, 
+  readOnly = false, 
+  onEdit, 
+  initialTopic = '', 
+  initialLevel = 'Beginner' 
+}: RoadmapInputProps) {
+  const [topic, setTopic] = useState(initialTopic);
+  const [level, setLevel] = useState<Level>(initialLevel);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setTopic(initialTopic);
+  }, [initialTopic]);
+
+  useEffect(() => {
+    setLevel(initialLevel);
+  }, [initialLevel]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -28,6 +47,36 @@ export default function RoadmapInput({ onGenerate, isLoading }: RoadmapInputProp
       onGenerate(topic.trim(), level);
     }
   };
+
+  if (readOnly) {
+    return (
+      <div className="w-full max-w-[800px] mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative bg-white rounded-[24px] p-6 shadow-sm border border-gray-200 flex items-center justify-between gap-4"
+        >
+          <div className="flex flex-col gap-1 align-left text-left">
+            <span className="text-xs text-blue-600 font-bold uppercase tracking-wider">Goal Topic & Level</span>
+            <h3 className="text-xl font-semibold text-[#1f1f1f]">{topic}</h3>
+            <div className="flex gap-2 mt-1">
+              <span className="text-xs text-[#444746] font-medium bg-[#f0f4f9] px-3 py-1 rounded-full">
+                {level} Level
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onEdit}
+            className="px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all cursor-pointer whitespace-nowrap"
+          >
+            Edit Goal
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="w-full max-w-[800px] mx-auto px-4">

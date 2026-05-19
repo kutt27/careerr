@@ -1,16 +1,10 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
 import Header from './components/Header';
 import RoadmapInput from './components/RoadmapInput';
 import RoadmapDisplay from './components/RoadmapDisplay';
 import IntakeForm from './components/IntakeForm';
-import { Roadmap, Level, IntakeQuestions, IntakeAnswer } from './types';
+import { Roadmap, Level, IntakeAnswer } from './types';
 import { generateRoadmap } from './services/geminiService';
-import { getIntakeQuestions } from './services/groqService';
 import { motion, AnimatePresence } from 'motion/react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
@@ -18,25 +12,16 @@ export default function App() {
   const [topic, setTopic] = useState<string>('');
   const [level, setLevel] = useState<Level | null>(null);
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
-  const [intake, setIntake] = useState<IntakeQuestions | null>(null);
+  const [showIntake, setShowIntake] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleInitialGenerate = async (topic: string, level: Level) => {
-    setIsLoading(true);
-    setError(null);
+  const handleInitialGenerate = (topic: string, level: Level) => {
     setTopic(topic);
     setLevel(level);
-    try {
-      const result = await getIntakeQuestions(topic, level);
-      setIntake(result);
-      setRoadmap(null); // Clear roadmap if we are re-generating
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
+    setShowIntake(true);
+    setRoadmap(null); // Clear roadmap if we are re-generating
+    setError(null);
   };
 
   const handleIntakeSubmit = async (answers: IntakeAnswer[]) => {
@@ -46,7 +31,7 @@ export default function App() {
     try {
       const result = await generateRoadmap(topic, level, answers);
       setRoadmap(result);
-      setIntake(null); // Done with intake
+      setShowIntake(false); // Done with intake
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       console.error(err);
@@ -56,19 +41,22 @@ export default function App() {
   };
 
   const handleCancelIntake = () => {
-    setIntake(null);
-    setTopic('');
-    setLevel(null);
+    setShowIntake(false);
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f4f9] flex flex-col">
+    <div className="min-h-screen w-full bg-[#f0f4f9] flex flex-col">
       <Header />
       
       <main className="flex-grow flex flex-col justify-center py-12">
         <div className="w-full max-w-5xl mx-auto space-y-12">
-          {!intake && !roadmap && (
-            <RoadmapInput onGenerate={handleInitialGenerate} isLoading={isLoading} />
+          {!showIntake && !roadmap && (
+            <RoadmapInput 
+              onGenerate={handleInitialGenerate} 
+              isLoading={isLoading} 
+              initialTopic={topic}
+              initialLevel={level || 'Beginner'}
+            />
           )}
 
           <AnimatePresence mode="wait">
@@ -82,7 +70,7 @@ export default function App() {
               >
                 <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
                 <p className="text-[#444746] text-sm font-medium">
-                  {intake ? "Building your personalized roadmap..." : "Analyzing your needs..."}
+                  {showIntake ? "Building your personalized roadmap..." : "Analyzing your needs..."}
                 </p>
               </motion.div>
             )}
@@ -99,9 +87,10 @@ export default function App() {
               </motion.div>
             )}
 
-            {intake && !roadmap && !isLoading && (
+            {showIntake && !roadmap && !isLoading && (
               <IntakeForm 
-                intake={intake} 
+                topic={topic}
+                level={level || 'Beginner'}
                 onSubmit={handleIntakeSubmit} 
                 onCancel={handleCancelIntake}
                 isLoading={isLoading} 
@@ -125,10 +114,11 @@ export default function App() {
 
       <footer className="py-8">
         <div className="container mx-auto px-4 text-center text-[#444746] text-xs">
-          <p>© {new Date().getFullYear()} careerr. Powered by AI.</p>
+          <p>Careerr © {new Date().getFullYear()}</p>
         </div>
       </footer>
     </div>
   );
 }
+
 
