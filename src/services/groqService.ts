@@ -64,7 +64,9 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
 
   const content = completion.choices[0]?.message?.content || "";
   try {
-    return JSON.parse(content) as Roadmap;
+    const parsed = JSON.parse(content);
+    const roadmap = parsed.roadmap || parsed;
+    return roadmap as Roadmap;
   } catch (e) {
     console.error("Failed to parse Groq roadmap:", content);
     throw new Error("Invalid roadmap format received from AI");

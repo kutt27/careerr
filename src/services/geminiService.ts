@@ -89,8 +89,12 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
     throw new Error("No response from AI");
   }
 
+  console.log("Gemini generateRoadmap raw response:", text.slice(0, 300));
   try {
-    return JSON.parse(text) as Roadmap;
+    const parsed = JSON.parse(text);
+    console.log("Gemini generateRoadmap parsed keys:", Object.keys(parsed));
+    console.log("Gemini generateRoadmap phases type:", Array.isArray(parsed.phases));
+    return parsed as Roadmap;
   } catch (e) {
     console.error("Failed to parse roadmap JSON:", text);
     throw new Error("Invalid roadmap format received from AI");

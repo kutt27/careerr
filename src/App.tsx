@@ -77,7 +77,14 @@ export default function App() {
       setIsLoading(true);
       try {
         const result = await generateRoadmap(topic, level, []);
-        setRoadmap(result);
+        console.log('generateRoadmap result:', result);
+        console.log('result.phases:', result?.phases);
+        console.log('result keys:', Object.keys(result || {}));
+        if (result && Array.isArray(result.phases) && result.phases.length > 0) {
+          setRoadmap(result);
+        } else {
+          setError(`Received invalid roadmap (phases: ${Array.isArray(result?.phases) ? result.phases.length : 'not an array'}, keys: ${Object.keys(result || {}).join(',')})`);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unexpected error occurred');
         console.error(err);
@@ -95,7 +102,11 @@ export default function App() {
     setError(null);
     try {
       const result = await generateRoadmap(topic, level, answers);
-      setRoadmap(result);
+      if (result && Array.isArray(result.phases) && result.phases.length > 0) {
+        setRoadmap(result);
+      } else {
+        setError('Received an invalid roadmap from the AI. Please try again.');
+      }
       setShowIntake(false); // Done with intake
       localStorage.removeItem('careerr_intake_answers');
       localStorage.removeItem('careerr_active_step');
@@ -132,13 +143,13 @@ export default function App() {
   return (
     <div className="min-h-screen w-full bg-[#f0f4f9] flex flex-col">
       <Header onLogoClick={handleReset} />
-      
-      <main className="flex-grow flex flex-col justify-center py-12">
+
+      <main className="grow flex flex-col justify-center py-12">
         <div className="w-full max-w-5xl mx-auto space-y-12">
           {!showIntake && !roadmap && (
-            <RoadmapInput 
-              onGenerate={handleInitialGenerate} 
-              isLoading={isLoading} 
+            <RoadmapInput
+              onGenerate={handleInitialGenerate}
+              isLoading={isLoading}
               initialTopic={topic}
               initialLevel={level || 'Quick'}
             />
@@ -160,40 +171,35 @@ export default function App() {
               </motion.div>
             )}
 
-            {error && (
-              <motion.div
-                key="error"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mx-4 p-4 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3 text-red-650 text-sm"
-              >
-                <AlertCircle size={18} />
-                <p className="font-medium">{error}</p>
-              </motion.div>
-            )}
-
-            {showIntake && !roadmap && !isLoading && (
-              <IntakeForm 
-                topic={topic}
-                level={level || 'Planning'}
-                onSubmit={handleIntakeSubmit} 
-                onCancel={handleCancelIntake}
-                isLoading={isLoading} 
-              />
-            )}
-
-            {roadmap && !isLoading && (
-              <motion.div
-                key="roadmap"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="px-4"
-              >
-                <RoadmapDisplay roadmap={roadmap} onReset={handleReset} onUpdateRoadmap={setRoadmap} />
-              </motion.div>
-            )}
           </AnimatePresence>
+
+          {error && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mx-4 p-4 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3 text-red-650 text-sm"
+            >
+              <AlertCircle size={18} />
+              <p className="font-medium">{error}</p>
+            </motion.div>
+          )}
+
+          {showIntake && !roadmap && !isLoading && (
+            <IntakeForm
+              topic={topic}
+              level={level || 'Planning'}
+              onSubmit={handleIntakeSubmit}
+              onCancel={handleCancelIntake}
+              isLoading={isLoading}
+            />
+          )}
+
+          {roadmap && !isLoading && (
+            <div className="px-4">
+              <RoadmapDisplay roadmap={roadmap} onReset={handleReset} onUpdateRoadmap={setRoadmap} />
+            </div>
+          )}
         </div>
       </main>
 
@@ -205,5 +211,3 @@ export default function App() {
     </div>
   );
 }
-
-
