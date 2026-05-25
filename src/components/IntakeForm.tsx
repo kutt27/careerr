@@ -209,11 +209,11 @@ export default function IntakeForm({ topic, level, onSubmit, onCancel, isLoading
           <div className="flex-grow pb-8 text-left">
             <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-250 flex items-center justify-between gap-4">
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-blue-600 font-bold uppercase tracking-wider">Goal Topic & Level</span>
+                <span className="text-xs text-blue-600 font-bold uppercase tracking-wider">Goal Topic & Mode</span>
                 <h3 className="text-xl font-semibold text-[#1f1f1f]">{topic}</h3>
                 <div className="flex gap-2 mt-1">
                   <span className="text-xs text-[#444746] font-medium bg-[#f0f4f9] px-3 py-1 rounded-full">
-                    {level} Level
+                    {level} Mode
                   </span>
                 </div>
               </div>
@@ -480,7 +480,7 @@ export default function IntakeForm({ topic, level, onSubmit, onCancel, isLoading
           >
             <div className="max-w-md space-y-4">
               <p className="text-sm text-slate-500">
-                Your roadmap preferences are set! We will construct a custom path suited to your goal and exposure level.
+                Your roadmap preferences are set! We will construct a custom path suited to your goal and mode.
               </p>
               <button
                 type="button"

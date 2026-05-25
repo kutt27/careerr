@@ -63,15 +63,30 @@ export default function App() {
     }
   }, [roadmap]);
 
-  const handleInitialGenerate = (topic: string, level: Level) => {
+  const handleInitialGenerate = async (topic: string, level: Level) => {
     setTopic(topic);
     setLevel(level);
-    setShowIntake(true);
-    setRoadmap(null); // Clear roadmap if we are re-generating
     setError(null);
+    setRoadmap(null); // Clear roadmap if we are re-generating
     localStorage.removeItem('careerr_intake_answers');
     localStorage.removeItem('careerr_active_step');
     localStorage.removeItem('careerr_max_step_reached');
+
+    if (level === 'Quick') {
+      setShowIntake(false);
+      setIsLoading(true);
+      try {
+        const result = await generateRoadmap(topic, level, []);
+        setRoadmap(result);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      setShowIntake(true);
+    }
   };
 
   const handleIntakeSubmit = async (answers: IntakeAnswer[]) => {
@@ -116,7 +131,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full bg-[#f0f4f9] flex flex-col">
-      <Header />
+      <Header onLogoClick={handleReset} />
       
       <main className="flex-grow flex flex-col justify-center py-12">
         <div className="w-full max-w-5xl mx-auto space-y-12">
@@ -125,7 +140,7 @@ export default function App() {
               onGenerate={handleInitialGenerate} 
               isLoading={isLoading} 
               initialTopic={topic}
-              initialLevel={level || 'Beginner'}
+              initialLevel={level || 'Quick'}
             />
           )}
 
@@ -140,7 +155,7 @@ export default function App() {
               >
                 <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
                 <p className="text-[#444746] text-sm font-medium">
-                  {showIntake ? "Building your personalized roadmap..." : "Analyzing your needs..."}
+                  {level === 'Quick' ? "Building your 80/20 roadmap..." : showIntake ? "Building your personalized roadmap..." : "Analyzing your needs..."}
                 </p>
               </motion.div>
             )}
@@ -160,7 +175,7 @@ export default function App() {
             {showIntake && !roadmap && !isLoading && (
               <IntakeForm 
                 topic={topic}
-                level={level || 'Beginner'}
+                level={level || 'Planning'}
                 onSubmit={handleIntakeSubmit} 
                 onCancel={handleCancelIntake}
                 isLoading={isLoading} 
