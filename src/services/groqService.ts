@@ -1,6 +1,6 @@
 import Groq from "groq-sdk";
 import { Level, IntakeAnswer, ReflectionProfile, Roadmap, ExpandedPhase } from "../types";
-import { GEMINI_PROMPT_TEMPLATE, GEMINI_REFLECTION_TEMPLATE, PHASE_EXPANSION_TEMPLATE } from "./templates";
+import { GEMINI_PROMPT_TEMPLATE, GEMINI_REFLECTION_TEMPLATE, PHASE_BATCH_EXPANSION_TEMPLATE } from "./templates";
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY || "",
@@ -73,14 +73,10 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
   }
 }
 
-export async function expandPhase(
+export async function expandPhaseBatch(
   topic: string,
-  phaseId: string,
-  phaseTitle: string,
-  phaseStyle: string,
-  motivationHook: string,
-  tasks: string[]
-): Promise<ExpandedPhase> {
+  phases: { id: string; title: string; style: string; motivation_hook: string; tasks: string[] }[]
+): Promise<ExpandedPhase[]> {
   const completion = await groq.chat.completions.create({
     messages: [
       {
@@ -89,18 +85,22 @@ export async function expandPhase(
       },
       {
         role: "user",
-        content: PHASE_EXPANSION_TEMPLATE(topic, phaseId, phaseTitle, phaseStyle, motivationHook, tasks)
+        content: PHASE_BATCH_EXPANSION_TEMPLATE(topic, phases)
       }
     ],
     model: "llama-3.3-70b-versatile",
     response_format: { type: "json_object" }
   });
 
-  const responseContent = completion.choices[0]?.message?.content || "";
+  const content = completion.choices[0]?.message?.content || "";
   try {
-    return JSON.parse(responseContent) as ExpandedPhase;
+    const parsed = JSON.parse(content);
+    if (!parsed.expanded_phases || !Array.isArray(parsed.expanded_phases)) {
+      throw new Error("Missing expanded_phases array in response");
+    }
+    return parsed.expanded_phases as ExpandedPhase[];
   } catch (e) {
-    console.error("Failed to parse Groq expanded phase:", responseContent);
-    throw new Error("Invalid expanded phase format received from AI");
+    console.error("Failed to parse Groq batch expansion:", content);
+    throw new Error("Invalid batch expansion format received from AI");
   }
 }

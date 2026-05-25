@@ -80,49 +80,52 @@ Guidelines for Roadmap Generation:
 `;
 };
 
-export const PHASE_EXPANSION_TEMPLATE = (
+export const PHASE_BATCH_EXPANSION_TEMPLATE = (
   topic: string,
-  phaseId: string,
-  phaseTitle: string,
-  phaseStyle: string,
-  motivationHook: string,
-  tasks: string[]
+  phases: { id: string; title: string; style: string; motivation_hook: string; tasks: string[] }[]
 ) => {
-  const taskList = tasks.map((t, i) => `${i + 1}. ${t}`).join("\n");
+  const phasesText = phases.map((p, i) => {
+    const taskList = p.tasks.map((t, ti) => `  ${ti + 1}. ${t}`).join("\n");
+    return `Phase "${p.title}" (id: ${p.id}, style: ${p.style})
+Motivation: "${p.motivation_hook}"
+Tasks:
+${taskList}`;
+  }).join("\n\n");
 
   return `
 You are an expert curriculum designer and technical mentor. The user is learning "${topic}".
 
-They are working on a phase called "${phaseTitle}" (${phaseStyle}).
-The motivation behind this phase: "${motivationHook}"
+Below are ${phases.length} consecutive phases of their learning roadmap. These phases build on each other sequentially. You are seeing a batch of phases together — use this cross-phase context to create richer, more connected explanations that reference what the learner already knows (from earlier phases in this batch) and foreshadow what's coming (in later phases in this batch).
 
-Here are the key milestones/tasks for this phase:
-${taskList}
+${phasesText}
 
-For EACH task above, expand it into a detailed, practical, and specific breakdown. Be concrete — name actual tools, frameworks, concepts, commands, or techniques where applicable. Do NOT suggest external links, books, or videos. Focus on actionable knowledge.
+For EACH task in EACH phase, expand it into a detailed, practical, and specific breakdown. Be concrete — name actual tools, frameworks, concepts, commands, patterns, or techniques. Do NOT suggest external links, books, or videos. Focus on actionable, specific knowledge.
 
 For each task provide:
-- "why": A sentence explaining WHY this task matters in the learner's journey. Connect it to the bigger picture.
-- "how": A specific, detailed description of HOW to accomplish this task. Be prescriptive and concrete. Include step-by-step mental models, techniques, or approaches.
-- "keywords": An array of 3-5 specific search keywords, tool names, or concept names the learner should look up.
-- "pitfall": One specific mistake or trap learners commonly fall into with this task, and how to avoid it.
-- "outcome": What the learner should be able to DO or UNDERSTAND after completing this task. A tangible, testable result.
+- "why": Why this task matters at THIS point in the journey. Connect it to the bigger picture and to adjacent phases where relevant.
+- "how": A specific, detailed, prescriptive description of HOW to accomplish this task. Use step-by-step mental models, concrete techniques, or hands-on approaches. Be specific — if there's a common CLI command, pattern name, or workflow, name it.
+- "keywords": An array of 3-5 specific search keywords, tool names, concept names, or technique names the learner should look up to go deeper.
+- "pitfall": One specific, real mistake learners commonly fall into with this task, and exactly how to avoid it.
+- "outcome": What the learner should concretely be able to DO or UNDERSTAND after completing this task. A tangible, testable result.
 
-Output a JSON object with this structure:
+Output a valid JSON object with a single key "expanded_phases" containing an array (same order as the phases above):
 {
-  "id": "${phaseId}",
-  "title": "${phaseTitle}",
-  "style": "${phaseStyle}",
-  "expanded_tasks": [
+  "expanded_phases": [
     {
-      "original": "the original task text",
-      "why": "...",
-      "how": "...",
-      "keywords": ["keyword1", "keyword2", "keyword3"],
-      "pitfall": "...",
-      "outcome": "..."
+      "id": "...",
+      "title": "...",
+      "style": "...",
+      "expanded_tasks": [
+        {
+          "original": "the original task text (exact match)",
+          "why": "...",
+          "how": "...",
+          "keywords": ["kw1", "kw2", "kw3"],
+          "pitfall": "...",
+          "outcome": "..."
+        }
+      ]
     }
-    // one entry per original task
   ]
 }
 `;

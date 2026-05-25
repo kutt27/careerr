@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Roadmap, ExpandedPhase } from '../types';
+import { Roadmap } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle2, Check, Sparkles, ChevronDown, ChevronUp, Loader2, Search, AlertTriangle, Lightbulb, Target } from 'lucide-react';
-import { expandPhase } from '../services/aiService';
+import { Check, Sparkles, Loader2, Search, AlertTriangle, Lightbulb, Target, Maximize2, Minimize2 } from 'lucide-react';
+import { expandAllPhases } from '../services/aiService';
 
 interface RoadmapDisplayProps {
   roadmap: Roadmap;
@@ -11,61 +11,39 @@ interface RoadmapDisplayProps {
 }
 
 export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: RoadmapDisplayProps) {
-  const [expandingPhases, setExpandingPhases] = useState<Set<string>>(new Set());
-  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
-  const [errorPhases, setErrorPhases] = useState<Record<string, string>>({});
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanding, setIsExpanding] = useState(false);
+  const [expandError, setExpandError] = useState<string | null>(null);
 
-  const handleToggleExpand = async (phaseIndex: number) => {
-    const phase = roadmap.phases[phaseIndex];
-    const key = phase.id || `P${phaseIndex + 1}`;
-
-    if (expandedPhases.has(key)) {
-      setExpandedPhases(prev => {
-        const next = new Set(prev);
-        next.delete(key);
-        return next;
-      });
+  const handleExpandAll = async () => {
+    if (isExpanded) {
+      setIsExpanded(false);
       return;
     }
 
-    if (phase.expanded) {
-      setExpandedPhases(prev => new Set(prev).add(key));
+    const allAlreadyExpanded = roadmap.phases.every(p => p.expanded);
+    if (allAlreadyExpanded) {
+      setIsExpanded(true);
       return;
     }
 
-    setExpandingPhases(prev => new Set(prev).add(key));
-    setErrorPhases(prev => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
+    setIsExpanding(true);
+    setExpandError(null);
 
     try {
-      const expanded = await expandPhase(
-        roadmap.topic,
-        phase.id || `P${phaseIndex + 1}`,
-        phase.title,
-        phase.style,
-        phase.motivation_hook || '',
-        phase.tasks || []
-      );
+      const expandedPhases = await expandAllPhases(roadmap.topic, roadmap.phases);
 
-      const updatedPhases = [...roadmap.phases];
-      updatedPhases[phaseIndex] = { ...phase, expanded };
+      const updatedPhases = roadmap.phases.map((phase, i) => {
+        const match = expandedPhases.find(ep => ep.id === phase.id);
+        return match ? { ...phase, expanded: match } : phase;
+      });
 
       onUpdateRoadmap({ ...roadmap, phases: updatedPhases });
-      setExpandedPhases(prev => new Set(prev).add(key));
+      setIsExpanded(true);
     } catch (err) {
-      setErrorPhases(prev => ({
-        ...prev,
-        [key]: err instanceof Error ? err.message : 'Failed to expand'
-      }));
+      setExpandError(err instanceof Error ? err.message : 'Failed to expand roadmap');
     } finally {
-      setExpandingPhases(prev => {
-        const next = new Set(prev);
-        next.delete(key);
-        return next;
-      });
+      setIsExpanding(false);
     }
   };
 
@@ -88,8 +66,34 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <div className="inline-block px-4 py-1.5 bg-blue-50 border border-blue-100 text-blue-800 text-xs font-bold rounded-full">
-            Structured into {roadmap.phase_count} Custom Phases
+            {roadmap.phase_count} Phases
           </div>
+          <button
+            onClick={handleExpandAll}
+            disabled={isExpanding}
+            className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-full transition-all cursor-pointer shadow-sm border ${
+              isExpanded
+                ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'
+                : 'bg-white border-blue-200 text-blue-600 hover:bg-blue-50'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {isExpanding ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Deep Diving...
+              </>
+            ) : isExpanded ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5" />
+                Collapse Details
+              </>
+            ) : (
+              <>
+                <Maximize2 className="w-3.5 h-3.5" />
+                Deep Dive
+              </>
+            )}
+          </button>
           <button
             onClick={onReset}
             className="px-4 py-1.5 bg-white border border-gray-300 hover:border-blue-300 hover:bg-blue-50/20 text-[#444746] hover:text-blue-700 text-xs font-bold rounded-full transition-all cursor-pointer shadow-sm"
@@ -97,14 +101,16 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
             Create New Roadmap
           </button>
         </div>
+        {expandError && (
+          <p className="text-xs text-red-600 bg-red-50 rounded-lg p-2.5 border border-red-100 max-w-md mx-auto">
+            {expandError}
+          </p>
+        )}
       </div>
 
       <div className="space-y-6 relative">
         {roadmap.phases.map((phase, index) => {
           const key = phase.id || `P${index + 1}`;
-          const isExpanded = expandedPhases.has(key);
-          const isLoading = expandingPhases.has(key);
-          const error = errorPhases[key];
 
           return (
             <motion.div
@@ -136,7 +142,7 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
                   </div>
                 )}
 
-                {/* Compact task list when collapsed */}
+                {/* Collapsed: simple task list */}
                 {!isExpanded && phase.tasks && phase.tasks.length > 0 && (
                   <div className="space-y-2 pt-1">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
@@ -158,7 +164,7 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
                   </div>
                 )}
 
-                {/* Expanded detailed view */}
+                {/* Expanded: rich task breakdown */}
                 <AnimatePresence>
                   {isExpanded && phase.expanded && (
                     <motion.div
@@ -168,14 +174,14 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
                       className="space-y-5 pt-2 overflow-hidden"
                     >
                       <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest block">
-                        Deep Dive &mdash; Task Breakdown
+                        Task Breakdown
                       </span>
                       {phase.expanded.expanded_tasks.map((et, tIndex) => (
                         <motion.div
                           key={tIndex}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: tIndex * 0.08 }}
+                          transition={{ delay: tIndex * 0.06 }}
                           className="bg-slate-50/60 border border-slate-150 rounded-2xl p-5 space-y-4"
                         >
                           <div className="flex items-start gap-2.5">
@@ -187,7 +193,7 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
                             </p>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="flex flex-col gap-3">
                             <div className="flex items-start gap-2">
                               <Lightbulb className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                               <div>
@@ -236,38 +242,10 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
                   )}
                 </AnimatePresence>
 
-                {/* Error state */}
-                {error && (
-                  <p className="text-xs text-red-500 bg-red-50 rounded-lg p-2.5 border border-red-100">
-                    {error}
-                  </p>
+                {/* Expanded but no data yet (shows during loading) */}
+                {isExpanded && !phase.expanded && isExpanding && (
+                  <p className="text-xs text-slate-400 italic pt-1">Expanding...</p>
                 )}
-
-                {/* Expand / Collapse button */}
-                <div className="pt-1">
-                  <button
-                    onClick={() => handleToggleExpand(index)}
-                    disabled={isLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Expanding...
-                      </>
-                    ) : isExpanded ? (
-                      <>
-                        <ChevronUp className="w-3.5 h-3.5" />
-                        Collapse details
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-3.5 h-3.5" />
-                        Expand details
-                      </>
-                    )}
-                  </button>
-                </div>
               </div>
             </motion.div>
           );
