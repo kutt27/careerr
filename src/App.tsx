@@ -190,7 +190,7 @@ export default function App() {
                 exit={{ opacity: 0, y: -10 }}
                 className="px-4"
               >
-                <RoadmapDisplay roadmap={roadmap} onReset={handleReset} />
+                <RoadmapDisplay roadmap={roadmap} onReset={handleReset} onUpdateRoadmap={setRoadmap} />
               </motion.div>
             )}
           </AnimatePresence>

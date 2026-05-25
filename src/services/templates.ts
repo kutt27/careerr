@@ -80,6 +80,54 @@ Guidelines for Roadmap Generation:
 `;
 };
 
+export const PHASE_EXPANSION_TEMPLATE = (
+  topic: string,
+  phaseId: string,
+  phaseTitle: string,
+  phaseStyle: string,
+  motivationHook: string,
+  tasks: string[]
+) => {
+  const taskList = tasks.map((t, i) => `${i + 1}. ${t}`).join("\n");
+
+  return `
+You are an expert curriculum designer and technical mentor. The user is learning "${topic}".
+
+They are working on a phase called "${phaseTitle}" (${phaseStyle}).
+The motivation behind this phase: "${motivationHook}"
+
+Here are the key milestones/tasks for this phase:
+${taskList}
+
+For EACH task above, expand it into a detailed, practical, and specific breakdown. Be concrete — name actual tools, frameworks, concepts, commands, or techniques where applicable. Do NOT suggest external links, books, or videos. Focus on actionable knowledge.
+
+For each task provide:
+- "why": A sentence explaining WHY this task matters in the learner's journey. Connect it to the bigger picture.
+- "how": A specific, detailed description of HOW to accomplish this task. Be prescriptive and concrete. Include step-by-step mental models, techniques, or approaches.
+- "keywords": An array of 3-5 specific search keywords, tool names, or concept names the learner should look up.
+- "pitfall": One specific mistake or trap learners commonly fall into with this task, and how to avoid it.
+- "outcome": What the learner should be able to DO or UNDERSTAND after completing this task. A tangible, testable result.
+
+Output a JSON object with this structure:
+{
+  "id": "${phaseId}",
+  "title": "${phaseTitle}",
+  "style": "${phaseStyle}",
+  "expanded_tasks": [
+    {
+      "original": "the original task text",
+      "why": "...",
+      "how": "...",
+      "keywords": ["keyword1", "keyword2", "keyword3"],
+      "pitfall": "...",
+      "outcome": "..."
+    }
+    // one entry per original task
+  ]
+}
+`;
+};
+
 export const GROQ_INTAKE_QUESTIONS_TEMPLATE = (topic: string, level: string) => `
 Topic: ${topic}
 Level: ${level}

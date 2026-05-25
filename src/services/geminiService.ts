@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Roadmap, Level, IntakeAnswer, ReflectionProfile } from "../types";
-import { GEMINI_PROMPT_TEMPLATE, GEMINI_REFLECTION_TEMPLATE } from "./templates";
+import { Roadmap, Level, IntakeAnswer, ReflectionProfile, ExpandedPhase } from "../types";
+import { GEMINI_PROMPT_TEMPLATE, GEMINI_REFLECTION_TEMPLATE, PHASE_EXPANSION_TEMPLATE } from "./templates";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
@@ -96,6 +96,59 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
   } catch (e) {
     console.error("Failed to parse roadmap JSON:", text);
     throw new Error("Invalid roadmap format received from AI");
+  }
+}
+
+export async function expandPhase(
+  topic: string,
+  phaseId: string,
+  phaseTitle: string,
+  phaseStyle: string,
+  motivationHook: string,
+  tasks: string[]
+): Promise<ExpandedPhase> {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: PHASE_EXPANSION_TEMPLATE(topic, phaseId, phaseTitle, phaseStyle, motivationHook, tasks),
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          title: { type: Type.STRING },
+          style: { type: Type.STRING },
+          expanded_tasks: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                original: { type: Type.STRING },
+                why: { type: Type.STRING },
+                how: { type: Type.STRING },
+                keywords: { type: Type.ARRAY, items: { type: Type.STRING } },
+                pitfall: { type: Type.STRING },
+                outcome: { type: Type.STRING }
+              },
+              required: ["original", "why", "how", "keywords", "pitfall", "outcome"]
+            }
+          }
+        },
+        required: ["id", "title", "style", "expanded_tasks"]
+      }
+    }
+  });
+
+  const text = response.text;
+  if (!text) {
+    throw new Error("No response from AI for phase expansion");
+  }
+
+  try {
+    return JSON.parse(text) as ExpandedPhase;
+  } catch (e) {
+    console.error("Failed to parse expanded phase JSON:", text);
+    throw new Error("Invalid expanded phase format received from AI");
   }
 }
 
