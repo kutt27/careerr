@@ -1,4 +1,4 @@
-import { Roadmap, Level, IntakeAnswer, ExpandedPhase, RoadmapPhase } from "../types";
+import { Roadmap, Level, IntakeAnswer, PhaseEnrichment, RoadmapPhase } from "../types";
 import * as geminiService from "./geminiService";
 import * as groqService from "./groqService";
 
@@ -30,7 +30,7 @@ function chunkPhases(phases: RoadmapPhase[]): RoadmapPhase[][] {
 export async function expandAllPhases(
   topic: string,
   phases: RoadmapPhase[]
-): Promise<ExpandedPhase[]> {
+): Promise<PhaseEnrichment[]> {
   const provider = process.env.AI_PROVIDER || "gemini";
   const service = provider.toLowerCase() === "groq" ? groqService : geminiService;
 

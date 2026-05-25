@@ -80,59 +80,42 @@ Guidelines for Roadmap Generation:
 `;
 };
 
+export const GROQ_INTAKE_QUESTIONS_TEMPLATE = (topic: string, level: string) => `
+Topic: ${topic}
+Level: ${level}
+`;
+
 export const PHASE_BATCH_EXPANSION_TEMPLATE = (
   topic: string,
   phases: { id: string; title: string; style: string; motivation_hook: string; tasks: string[] }[]
 ) => {
-  const phasesText = phases.map((p, i) => {
-    const taskList = p.tasks.map((t, ti) => `  ${ti + 1}. ${t}`).join("\n");
+  const phasesText = phases.map((p) => {
+    const taskList = p.tasks.map((t, ti) => `${ti + 1}. ${t}`).join("\n");
     return `Phase "${p.title}" (id: ${p.id}, style: ${p.style})
 Motivation: "${p.motivation_hook}"
-Tasks:
+Current tasks:
 ${taskList}`;
   }).join("\n\n");
 
   return `
-You are an expert curriculum designer and technical mentor. The user is learning "${topic}".
+You are an expert curriculum designer. The user is learning "${topic}".
 
-Below are ${phases.length} consecutive phases of their learning roadmap. These phases build on each other sequentially. You are seeing a batch of phases together — use this cross-phase context to create richer, more connected explanations that reference what the learner already knows (from earlier phases in this batch) and foreshadow what's coming (in later phases in this batch).
+Below are ${phases.length} phases of their learning roadmap. For each task in each phase, rewrite it into a richer, more specific version that fills in the missing 20% — the concrete details, specific tools, techniques, or sub-steps that make it truly actionable. Keep each enriched task to 1-2 sentences. Be specific and concrete. Do NOT suggest links or videos.
 
 ${phasesText}
 
-For EACH task in EACH phase, expand it into a detailed, practical, and specific breakdown. Be concrete — name actual tools, frameworks, concepts, commands, patterns, or techniques. Do NOT suggest external links, books, or videos. Focus on actionable, specific knowledge.
-
-For each task provide:
-- "why": Why this task matters at THIS point in the journey. Connect it to the bigger picture and to adjacent phases where relevant.
-- "how": A specific, detailed, prescriptive description of HOW to accomplish this task. Use step-by-step mental models, concrete techniques, or hands-on approaches. Be specific — if there's a common CLI command, pattern name, or workflow, name it.
-- "keywords": An array of 3-5 specific search keywords, tool names, concept names, or technique names the learner should look up to go deeper.
-- "pitfall": One specific, real mistake learners commonly fall into with this task, and exactly how to avoid it.
-- "outcome": What the learner should concretely be able to DO or UNDERSTAND after completing this task. A tangible, testable result.
-
-Output a valid JSON object with a single key "expanded_phases" containing an array (same order as the phases above):
+Output a JSON object with "expanded_phases" — an array with one entry per phase (same order):
 {
   "expanded_phases": [
     {
-      "id": "...",
-      "title": "...",
-      "style": "...",
-      "expanded_tasks": [
-        {
-          "original": "the original task text (exact match)",
-          "why": "...",
-          "how": "...",
-          "keywords": ["kw1", "kw2", "kw3"],
-          "pitfall": "...",
-          "outcome": "..."
-        }
+      "id": "the phase id exactly as given",
+      "enriched_tasks": [
+        "enriched version of task 1",
+        "enriched version of task 2"
       ]
     }
   ]
 }
 `;
 };
-
-export const GROQ_INTAKE_QUESTIONS_TEMPLATE = (topic: string, level: string) => `
-Topic: ${topic}
-Level: ${level}
-`;
 

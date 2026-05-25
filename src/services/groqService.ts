@@ -1,5 +1,5 @@
 import Groq from "groq-sdk";
-import { Level, IntakeAnswer, ReflectionProfile, Roadmap, ExpandedPhase } from "../types";
+import { Level, IntakeAnswer, ReflectionProfile, Roadmap, PhaseEnrichment } from "../types";
 import { GEMINI_PROMPT_TEMPLATE, GEMINI_REFLECTION_TEMPLATE, PHASE_BATCH_EXPANSION_TEMPLATE } from "./templates";
 
 const groq = new Groq({
@@ -33,7 +33,6 @@ export async function generateReflection(topic: string, level: Level, answers: I
 }
 
 export async function generateRoadmap(topic: string, level: Level, answers: IntakeAnswer[]): Promise<Roadmap> {
-  // Stage 1: Generate self-reflection profile
   let reflection: ReflectionProfile;
   try {
     reflection = await generateReflection(topic, level, answers);
@@ -48,7 +47,6 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
     };
   }
 
-  // Stage 2: Generate personalized roadmap
   const completion = await groq.chat.completions.create({
     messages: [
       {
@@ -76,7 +74,7 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
 export async function expandPhaseBatch(
   topic: string,
   phases: { id: string; title: string; style: string; motivation_hook: string; tasks: string[] }[]
-): Promise<ExpandedPhase[]> {
+): Promise<PhaseEnrichment[]> {
   const completion = await groq.chat.completions.create({
     messages: [
       {
@@ -92,15 +90,28 @@ export async function expandPhaseBatch(
     response_format: { type: "json_object" }
   });
 
-  const content = completion.choices[0]?.message?.content || "";
+  const responseContent = completion.choices[0]?.message?.content || "";
   try {
-    const parsed = JSON.parse(content);
-    if (!parsed.expanded_phases || !Array.isArray(parsed.expanded_phases)) {
-      throw new Error("Missing expanded_phases array in response");
+    const parsed = JSON.parse(responseContent);
+
+    let phases: any[];
+
+    if (parsed.expanded_phases && Array.isArray(parsed.expanded_phases)) {
+      phases = parsed.expanded_phases;
+    } else if (Array.isArray(parsed)) {
+      phases = parsed;
+    } else {
+      const possibleArrayKey = Object.keys(parsed).find(k => Array.isArray(parsed[k]));
+      if (possibleArrayKey) {
+        phases = parsed[possibleArrayKey];
+      } else {
+        throw new Error(`Missing expanded_phases array in response. Got keys: ${Object.keys(parsed).join(", ")}`);
+      }
     }
-    return parsed.expanded_phases as ExpandedPhase[];
+
+    return phases as PhaseEnrichment[];
   } catch (e) {
-    console.error("Failed to parse Groq batch expansion:", content);
+    console.error("Failed to parse Groq batch expansion:", responseContent);
     throw new Error("Invalid batch expansion format received from AI");
   }
 }

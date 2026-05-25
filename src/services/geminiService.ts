@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Roadmap, Level, IntakeAnswer, ReflectionProfile, ExpandedPhase } from "../types";
+import { Roadmap, Level, IntakeAnswer, ReflectionProfile, PhaseEnrichment } from "../types";
 import { GEMINI_PROMPT_TEMPLATE, GEMINI_REFLECTION_TEMPLATE, PHASE_BATCH_EXPANSION_TEMPLATE } from "./templates";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
@@ -35,7 +35,6 @@ export async function generateReflection(topic: string, level: Level, answers: I
 }
 
 export async function generateRoadmap(topic: string, level: Level, answers: IntakeAnswer[]): Promise<Roadmap> {
-  // Stage 1: Generate self-reflection profile
   let reflection: ReflectionProfile;
   try {
     reflection = await generateReflection(topic, level, answers);
@@ -50,7 +49,6 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
     };
   }
 
-  // Stage 2: Generate personalized roadmap
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: GEMINI_PROMPT_TEMPLATE(topic, level, answers, reflection),
@@ -102,7 +100,7 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
 export async function expandPhaseBatch(
   topic: string,
   phases: { id: string; title: string; style: string; motivation_hook: string; tasks: string[] }[]
-): Promise<ExpandedPhase[]> {
+): Promise<PhaseEnrichment[]> {
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: PHASE_BATCH_EXPANSION_TEMPLATE(topic, phases),
@@ -117,25 +115,12 @@ export async function expandPhaseBatch(
               type: Type.OBJECT,
               properties: {
                 id: { type: Type.STRING },
-                title: { type: Type.STRING },
-                style: { type: Type.STRING },
-                expanded_tasks: {
+                enriched_tasks: {
                   type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      original: { type: Type.STRING },
-                      why: { type: Type.STRING },
-                      how: { type: Type.STRING },
-                      keywords: { type: Type.ARRAY, items: { type: Type.STRING } },
-                      pitfall: { type: Type.STRING },
-                      outcome: { type: Type.STRING }
-                    },
-                    required: ["original", "why", "how", "keywords", "pitfall", "outcome"]
-                  }
+                  items: { type: Type.STRING }
                 }
               },
-              required: ["id", "title", "style", "expanded_tasks"]
+              required: ["id", "enriched_tasks"]
             }
           }
         },
@@ -151,13 +136,24 @@ export async function expandPhaseBatch(
 
   try {
     const parsed = JSON.parse(text);
-    if (!parsed.expanded_phases || !Array.isArray(parsed.expanded_phases)) {
-      throw new Error("Missing expanded_phases array in response");
+
+    let phases: any[];
+    if (parsed.expanded_phases && Array.isArray(parsed.expanded_phases)) {
+      phases = parsed.expanded_phases;
+    } else if (Array.isArray(parsed)) {
+      phases = parsed;
+    } else {
+      const possibleArrayKey = Object.keys(parsed).find(k => Array.isArray(parsed[k]));
+      if (possibleArrayKey) {
+        phases = parsed[possibleArrayKey];
+      } else {
+        throw new Error(`Missing expanded_phases array. Got keys: ${Object.keys(parsed).join(", ")}`);
+      }
     }
-    return parsed.expanded_phases as ExpandedPhase[];
+
+    return phases as PhaseEnrichment[];
   } catch (e) {
     console.error("Failed to parse batch expansion JSON:", text);
     throw new Error("Invalid batch expansion format received from AI");
   }
 }
-

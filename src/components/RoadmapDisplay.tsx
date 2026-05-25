@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Roadmap } from '../types';
-import { motion, AnimatePresence } from 'motion/react';
-import { Check, Sparkles, Loader2, Search, AlertTriangle, Lightbulb, Target, Maximize2, Minimize2 } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Check, Sparkles, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import { expandAllPhases } from '../services/aiService';
 
 interface RoadmapDisplayProps {
@@ -21,7 +21,7 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
       return;
     }
 
-    const allAlreadyExpanded = roadmap.phases.every(p => p.expanded);
+    const allAlreadyExpanded = roadmap.phases.every(p => p.enriched_tasks && p.enriched_tasks.length > 0);
     if (allAlreadyExpanded) {
       setIsExpanded(true);
       return;
@@ -31,17 +31,29 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
     setExpandError(null);
 
     try {
-      const expandedPhases = await expandAllPhases(roadmap.topic, roadmap.phases);
+      const enriched = await expandAllPhases(roadmap.topic, roadmap.phases);
+
+      if (!enriched || enriched.length === 0) {
+        setExpandError('Received empty enrichment from AI');
+        return;
+      }
 
       const updatedPhases = roadmap.phases.map((phase, i) => {
-        const match = expandedPhases.find(ep => ep.id === phase.id);
-        return match ? { ...phase, expanded: match } : phase;
+        const matchById = enriched.find(e => e.id === phase.id);
+        if (matchById) return { ...phase, enriched_tasks: matchById.enriched_tasks };
+        if (enriched[i]) return { ...phase, enriched_tasks: enriched[i].enriched_tasks };
+        return phase;
       });
+
+      if (!updatedPhases.some(p => p.enriched_tasks && p.enriched_tasks.length > 0)) {
+        setExpandError('No enrichment data was returned from the AI');
+        return;
+      }
 
       onUpdateRoadmap({ ...roadmap, phases: updatedPhases });
       setIsExpanded(true);
     } catch (err) {
-      setExpandError(err instanceof Error ? err.message : 'Failed to expand roadmap');
+      setExpandError(err instanceof Error ? err.message : 'Failed to enrich roadmap');
     } finally {
       setIsExpanding(false);
     }
@@ -80,12 +92,12 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
             {isExpanding ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Deep Diving...
+                Enriching...
               </>
             ) : isExpanded ? (
               <>
                 <Minimize2 className="w-3.5 h-3.5" />
-                Collapse Details
+                Show Overview
               </>
             ) : (
               <>
@@ -111,6 +123,9 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
       <div className="space-y-6 relative">
         {roadmap.phases.map((phase, index) => {
           const key = phase.id || `P${index + 1}`;
+          const tasks = isExpanded && phase.enriched_tasks?.length
+            ? phase.enriched_tasks
+            : phase.tasks;
 
           return (
             <motion.div
@@ -142,14 +157,13 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
                   </div>
                 )}
 
-                {/* Collapsed: simple task list */}
-                {!isExpanded && phase.tasks && phase.tasks.length > 0 && (
+                {tasks && tasks.length > 0 && (
                   <div className="space-y-2 pt-1">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
-                      Milestones &amp; Keyword Focus
+                      {isExpanded ? 'Enriched Milestones' : 'Milestones &amp; Keywords'}
                     </span>
                     <div className="flex flex-col gap-2.5">
-                      {phase.tasks.map((task, tIndex) => (
+                      {tasks.map((task, tIndex) => (
                         <div
                           key={tIndex}
                           className="flex items-start gap-2.5 p-3 bg-slate-50/50 border border-slate-100 rounded-xl text-xs text-slate-650 hover:bg-slate-100/50 hover:border-slate-200 transition-all duration-200"
@@ -164,87 +178,8 @@ export default function RoadmapDisplay({ roadmap, onReset, onUpdateRoadmap }: Ro
                   </div>
                 )}
 
-                {/* Expanded: rich task breakdown */}
-                <AnimatePresence>
-                  {isExpanded && phase.expanded && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="space-y-5 pt-2 overflow-hidden"
-                    >
-                      <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest block">
-                        Task Breakdown
-                      </span>
-                      {phase.expanded.expanded_tasks.map((et, tIndex) => (
-                        <motion.div
-                          key={tIndex}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: tIndex * 0.06 }}
-                          className="bg-slate-50/60 border border-slate-150 rounded-2xl p-5 space-y-4"
-                        >
-                          <div className="flex items-start gap-2.5">
-                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold flex-shrink-0 mt-0.5">
-                              {tIndex + 1}
-                            </div>
-                            <p className="text-sm font-bold text-[#1f1f1f] leading-snug">
-                              {et.original}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-col gap-3">
-                            <div className="flex items-start gap-2">
-                              <Lightbulb className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                              <div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Why</span>
-                                <p className="text-xs text-slate-600 leading-relaxed mt-0.5">{et.why}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <Target className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                              <div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Outcome</span>
-                                <p className="text-xs text-slate-600 leading-relaxed mt-0.5">{et.outcome}</p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">How</span>
-                            <p className="text-xs text-slate-700 leading-relaxed bg-white rounded-xl p-3 border border-slate-100">
-                              {et.how}
-                            </p>
-                          </div>
-
-                          <div className="flex items-start gap-2">
-                            <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Common Pitfall</span>
-                              <p className="text-xs text-slate-600 leading-relaxed mt-0.5">{et.pitfall}</p>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <Search className="w-3.5 h-3.5 text-slate-400" />
-                            {et.keywords.map((kw, kIndex) => (
-                              <span
-                                key={kIndex}
-                                className="px-2.5 py-0.5 bg-white border border-slate-200 text-slate-600 text-[11px] font-medium rounded-full"
-                              >
-                                {kw}
-                              </span>
-                            ))}
-                          </div>
-                        </motion.div>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Expanded but no data yet (shows during loading) */}
-                {isExpanded && !phase.expanded && isExpanding && (
-                  <p className="text-xs text-slate-400 italic pt-1">Expanding...</p>
+                {isExpanded && !phase.enriched_tasks?.length && isExpanding && (
+                  <p className="text-xs text-slate-400 italic pt-1">Enriching...</p>
                 )}
               </div>
             </motion.div>
