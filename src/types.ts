@@ -9,11 +9,17 @@ export interface ReflectionProfile {
 }
 
 export interface RoadmapPhase {
-  id: string; // e.g. "P1"
+  id: string;
   title: string;
   style: string;
   motivation_hook: string;
   tasks: string[];
+  enriched_tasks?: string[];
+}
+
+export interface PhaseEnrichment {
+  id: string;
+  enriched_tasks: string[];
 }
 
 export interface Roadmap {
@@ -33,4 +39,3 @@ export interface IntakeAnswer {
   question: string;
   answer: string;
 }
-

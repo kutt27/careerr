@@ -85,3 +85,37 @@ Topic: ${topic}
 Level: ${level}
 `;
 
+export const PHASE_BATCH_EXPANSION_TEMPLATE = (
+  topic: string,
+  phases: { id: string; title: string; style: string; motivation_hook: string; tasks: string[] }[]
+) => {
+  const phasesText = phases.map((p) => {
+    const taskList = p.tasks.map((t, ti) => `${ti + 1}. ${t}`).join("\n");
+    return `Phase "${p.title}" (id: ${p.id}, style: ${p.style})
+Motivation: "${p.motivation_hook}"
+Current tasks:
+${taskList}`;
+  }).join("\n\n");
+
+  return `
+You are an expert curriculum designer. The user is learning "${topic}".
+
+Below are ${phases.length} phases of their learning roadmap. For each task in each phase, rewrite it into a richer, more specific version that fills in the missing 20% — the concrete details, specific tools, techniques, or sub-steps that make it truly actionable. Keep each enriched task to 1-2 sentences. Be specific and concrete. Do NOT suggest links or videos.
+
+${phasesText}
+
+Output a JSON object with "expanded_phases" — an array with one entry per phase (same order):
+{
+  "expanded_phases": [
+    {
+      "id": "the phase id exactly as given",
+      "enriched_tasks": [
+        "enriched version of task 1",
+        "enriched version of task 2"
+      ]
+    }
+  ]
+}
+`;
+};
+
