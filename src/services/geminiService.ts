@@ -35,7 +35,6 @@ export async function generateReflection(topic: string, level: Level, answers: I
 }
 
 export async function generateRoadmap(topic: string, level: Level, answers: IntakeAnswer[]): Promise<Roadmap> {
-  // Stage 1: Generate self-reflection profile
   let reflection: ReflectionProfile;
   try {
     reflection = await generateReflection(topic, level, answers);
@@ -50,7 +49,6 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
     };
   }
 
-  // Stage 2: Generate personalized roadmap
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: GEMINI_PROMPT_TEMPLATE(topic, level, answers, reflection),
@@ -98,7 +96,6 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
     throw new Error("Invalid roadmap format received from AI");
   }
 }
-
 
 export async function expandPhaseBatch(
   topic: string,
@@ -160,4 +157,3 @@ export async function expandPhaseBatch(
     throw new Error("Invalid batch expansion format received from AI");
   }
 }
-

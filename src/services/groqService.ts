@@ -33,7 +33,6 @@ export async function generateReflection(topic: string, level: Level, answers: I
 }
 
 export async function generateRoadmap(topic: string, level: Level, answers: IntakeAnswer[]): Promise<Roadmap> {
-  // Stage 1: Generate self-reflection profile
   let reflection: ReflectionProfile;
   try {
     reflection = await generateReflection(topic, level, answers);
@@ -48,7 +47,6 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
     };
   }
 
-  // Stage 2: Generate personalized roadmap
   const completion = await groq.chat.completions.create({
     messages: [
       {
