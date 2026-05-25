@@ -8,12 +8,29 @@ export interface ReflectionProfile {
   current_trend_frame: string;
 }
 
+export interface ExpandedTask {
+  original: string;
+  why: string;
+  how: string;
+  keywords: string[];
+  pitfall: string;
+  outcome: string;
+}
+
+export interface ExpandedPhase {
+  id: string;
+  title: string;
+  style: string;
+  expanded_tasks: ExpandedTask[];
+}
+
 export interface RoadmapPhase {
   id: string; // e.g. "P1"
   title: string;
   style: string;
   motivation_hook: string;
   tasks: string[];
+  expanded?: ExpandedPhase;
 }
 
 export interface Roadmap {
