@@ -72,7 +72,9 @@ export async function generateRoadmap(topic: string, level: Level, answers: Inta
                 motivation_hook: { type: Type.STRING },
                 tasks: {
                   type: Type.ARRAY,
-                  items: { type: Type.STRING }
+                  items: { type: Type.STRING },
+                  minItems: 5,
+                  maxItems: 9
                 }
               },
               required: ["id", "title", "style", "motivation_hook", "tasks"]
@@ -121,7 +123,9 @@ export async function expandPhaseBatch(
                 id: { type: Type.STRING },
                 enriched_tasks: {
                   type: Type.ARRAY,
-                  items: { type: Type.STRING }
+                  items: { type: Type.STRING },
+                  minItems: 5,
+                  maxItems: 9
                 }
               },
               required: ["id", "enriched_tasks"]

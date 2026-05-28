@@ -11,3 +11,6 @@
 
 # llm
 - Use index-based fallback matching when correlating LLM expansion responses to original items, since LLMs don't reliably preserve exact ID fields across calls. Confidence: 0.70
+
+# roadmap
+- Each phase should contain 5-9 points for sufficient clarity, not just a few sparse bullet points. Confidence: 0.70

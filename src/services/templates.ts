@@ -65,18 +65,19 @@ Here is the expert self-reflection analysis of this learner:
 Guidelines for Roadmap Generation:
 1. Dynamic Phase Count:
    ${phaseInstruction}
-2. Phase Semantics: Structuring phases as milestones, not weeks. Examples of phase progressions include:
+2. Tasks Per Phase: Each and every phase MUST contain exactly 5 to 9 specific, actionable tasks. Never produce a phase with fewer than 5 or more than 9 tasks. Each task should be a single, clear action or concept the learner can tackle — not vague placeholders. Think of tasks as the granular steps someone actually executes.
+4. Phase Semantics: Structuring phases as milestones, not weeks. Examples of phase progressions include:
    - Foundation (core concepts)
    - Pattern recognition (common patterns / idioms)
    - Practice / drills
    - Project zero (small project)
    - Integration (advanced pieces + tools)
    - Independent practice (self-driven, stretch projects)
-3. Steering by Reflection:
+5. Steering by Reflection:
    - Risk Factors: Insert micro-checkpoints and re-motivation messages in the description or tasks of early phases.
    - Learning Style Preference: Swap emphasis (e.g., deep definitions + conceptual examples vs more "try this next" actions).
    - Current Trend Frame: Wrap each phase in a framing sentence (e.g., "In this phase you'll learn the modern pattern used in...").
-4. Text-Based Focus: Do NOT suggest external links, books, videos, or external URLs. Focus on conceptual outlines, tasks to try, and specific keywords to search.
+6. Text-Based Focus: Do NOT suggest external links, books, videos, or external URLs. Focus on conceptual outlines, tasks to try, and specific keywords to search.
 `;
 };
 
@@ -100,7 +101,7 @@ ${taskList}`;
   return `
 You are an expert curriculum designer. The user is learning "${topic}".
 
-Below are ${phases.length} phases of their learning roadmap. For each task in each phase, rewrite it into a richer, more specific version that fills in the missing 20% — the concrete details, specific tools, techniques, or sub-steps that make it truly actionable. Keep each enriched task to 1-2 sentences. Be specific and concrete. Do NOT suggest links or videos.
+Below are ${phases.length} phases of their learning roadmap. For each phase, produce 5 to 9 enriched tasks. If the phase already has 5-9 tasks, enrich each one. If it has fewer than 5, add new meaningful tasks to reach at least 5. If it somehow has more than 9, keep only the 9 most valuable ones. Each enriched task should be a richer, more specific version that fills in the missing 20% — the concrete details, specific tools, techniques, or sub-steps that make it truly actionable. Keep each enriched task to 1-2 sentences. Be specific and concrete. Do NOT suggest links or videos.
 
 ${phasesText}
 
